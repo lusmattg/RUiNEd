@@ -10,6 +10,9 @@ export interface GameState {
 
 type GameActions = {
   increment: (params: { amount: number }) => void
+  voteNextRoom: (params: { vote: string }) => void
+  changeRoom: (params: { newRoom: string }) => void
+  chooseTreasure: (params: { treasureName: string, playerId: string, game: GameState }) => void
 }
 
 export type Party = {
@@ -23,6 +26,7 @@ export type PartyMember = {
   magAtk: number,
   physDef: number,
   magDef: number,
+  equip: object
 }
 
 export type Enemy = {
@@ -35,7 +39,9 @@ export type Enemy = {
 }
 
 export type Treasure = {
-  name: string
+  name: string,
+  slot: string,
+  effects: Array<Effect>
 }
 
 export type RoomRune = {
@@ -56,26 +62,11 @@ export type Room = {
 
 export type Effect = {
   name: string,
-  hpBuff: number,
   duration: number,
   effectType: string,
-  damageMult: number,
-  physAtkBuffSelf: number,
-  physAtkBuffParty: number,
-  physAtkNerfEnemy: number,
-  physAtkNerfEnemyParty: number,
-  magAtkBuff: number,
-  magAtkBuffParty: number,
-  magAtkNerfEnemy: number,
-  magAtkNerfEnemyParty: number,
-  physDefBuff: number,
-  physDefBuffParty: number,
-  physDefNerfEnemy: number,
-  physDefNerfEnemyParty: number,
-  magDefBuff: number,
-  magDefBuffParty: number,
-  magDefNerfEnemy: number,
-  magDefNerfEnemyParty: number,
+  magnitude: number,
+  scope: string, // anyOne, self, party, enemy, enemyParty, all
+  affectedStat: string // physAtk, magAtk, physDef, magDef, maxHp, curHp
 }
 
 declare global {
@@ -86,7 +77,79 @@ export function getCount(game: GameState) {
   return game.count;
 }
 
+const wholePartyChoseItem = (game: GameState) => {
+  for (const i of Object.keys(game.party)) {
+    if (!game.currentRoom.choseItem[i]) {
+      return false;
+    }
+  }
+  return true;
+}
 
+const wholePartyVoted = (game: GameState) => {
+  for (const i of Object.keys(game.party)) {
+    if (!game.currentRoom.pathVotes[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+const pathVoteResult = (game: GameState) => {
+  const candidates = {};
+  let winner = '';
+  let winnerVotes = 0;
+  for (const i of Object.keys(game.currentRoom.pathVotes)) {
+    const vote = game.currentRoom.pathVotes[i];
+    if (candidates[vote]) {
+      candidates[vote] += 1;
+      if (candidates[vote] > winnerVotes) {
+        winner = vote;
+        winnerVotes = candidates[vote];
+      }
+    }
+    else {
+      candidates[vote] = 1;
+      if (candidates[vote] > winnerVotes) {
+        winner = vote;
+        winnerVotes = candidates[vote];
+      }
+    }
+  }
+  return winner;
+}
+
+
+const treasure = {
+  'Emerald Sword': {
+    name: 'Emerald Sword',
+    slot: 'weapon',
+    effects: [
+      { name: 'weaponStrBuff', duration: -1, magnitude: 4, scope: 'self', affectedStat: 'physAtk'  }
+    ]
+  },
+  'Ruby Staff': {
+    name: 'Ruby Staff',
+    slot: 'weapon',
+    effects: [
+      { name: 'weaponMagBuff', duration: -1, magnitude: 4, scope: 'self', affectedStat: 'magAtk'}
+    ]
+  },
+  'Mythril Mail': {
+    name: 'Mythril Mail',
+    slot: 'armor',
+    effects: [
+      { name: 'armorDefBuff', duration: -1, magnitude: 4, scope: 'self', affectedStat: 'physDef'}
+    ]
+  },
+  'Rainbow Robe': {
+    name: 'Rainbow Robe',
+    slot: 'armor',
+    effects: [
+      { name: 'armorDefBuff', duration: -1, magnitude: 4, scope: 'self', affectedStat: 'magDef'}
+    ]
+  }
+}
 
 const enemies = {
   'eWhiteGem': {
@@ -100,7 +163,7 @@ const enemies = {
   }
 }
 
-const rooms = {
+const rooms: [key: string] = {
   'rTutorialRuneRoom': {
     name: 'Tutorial - Runes',
     intro: 'Mysterious etchings ahead',
@@ -110,7 +173,10 @@ const rooms = {
     sTreasure: [],
     sLocked: false,
     sRune: null,
-    paths: ['rTutorialChoiceRoom']    
+    paths: ['rTutorialChoiceRoom'],
+    pathVotes: {},
+    choseItem: {},
+    choseUpgrade: {},
   },
   'rTutorialRestorationRoom':{
     name: 'Tutorial - Restoration',
@@ -121,7 +187,10 @@ const rooms = {
     sTreasure: [],
     sLocked: false,
     sRune: null,
-    paths: ['rTutorialRuneRoom']    
+    paths: ['rTutorialRuneRoom'],
+    pathVotes: {},
+    choseItem: {},
+    choseUpgrade: {},
   },
   'rTutorialEnemyRoom':{
     name: 'Tutorial - Enemies',
@@ -132,7 +201,10 @@ const rooms = {
     sTreasure: [],
     sLocked: false,
     sRune: null,
-    paths: ['rTutorialRestorationRoom']  
+    paths: ['rTutorialRestorationRoom'],
+    pathVotes: {},
+    choseItem: {},
+    choseUpgrade: {}, 
   },
   'rTutorialTreasureRoom':{
     name: 'Tutorial - Treasure',
@@ -140,10 +212,13 @@ const rooms = {
     desc: 'In RUiNEd, you\'ll find treasure! Try it now!',
     sType: 'treasure',
     sEnemies: [],
-    sTreasure: [],
+    sTreasure: [treasure['Emerald Sword'],treasure['Ruby Staff'],treasure['Mythril Mail'],treasure['Rainbow Robe']],
     sLocked: false,
     sRune: null,
-    paths: ['rTutorialEnemyRoom']
+    paths: ['rTutorialEnemyRoom'],
+    pathVotes: {},
+    choseItem: {},
+    choseUpgrade: {},
   },
   'rTutorialChoiceRoom':{
     name: 'Tutorial - Choice',
@@ -154,49 +229,145 @@ const rooms = {
     sTreasure: [],
     sLocked: false,
     sRune: null,
-    paths: []  
+    paths: ['rWinRoom','rTutorialChoiceRoom'],
+    pathVotes: {},
+    choseItem: {},
+    choseUpgrade: {},
+  },
+  'rWinRoom':{
+    name: 'Congrats!',
+    intro: 'A light ahead?',
+    desc: 'A light at the end of the ruins! You win!',
+    sType: 'win',
+    sEnemies: [],
+    sTreasure: [],
+    sLocked: false,
+    sRune: null,
+    paths: [],
+    pathVotes: {},
+    choseItem: {},
+    choseUpgrade: {},
   }
 }
 
+const changeRoom = (newRoom: string, game: GameState) => {
+  console.log(game)
+  console.log('CHANGING ROOM TO ', newRoom);
+  game.currentRoom = rooms[newRoom];
+  game.choiceState = 'inAction';
+  game.choiceTimer = 30;
+  
+}
 
 Rune.initLogic({
   minPlayers: 1,
   maxPlayers: 4,
-  setup: (): GameState => {
+  setup: (allPlayerIds): GameState => {
+    const startingParty: Party = {};
+
+    for (const playerId of allPlayerIds) {
+      startingParty[playerId] = {
+        maxHp: 40,
+        curHp: 40,
+        physAtk: 10,
+        magAtk: 10,
+        physDef: 10,
+        magDef: 10,
+        equip: {helm: '', armor: '', weapon: '', accessory: '', artifact: ''}
+      };
+
+    }
     return { 
       count: 0,
       currentRoom: rooms['rTutorialTreasureRoom'],
-      party: {},
+      party: startingParty,
       choiceState: 'inAction',
       choiceTimer: 60
     }
   },
   update: ({game}) => {
+    console.log(game.choiceState + ': ' + game.choiceTimer)
     //console.log(Rune.gameTimeInSeconds());
-    if (game.choiceTimer > -1) {
-      game.choiceTimer -= 1;
+    if (game.currentRoom.sType == 'win') {
+      const pW = {};
+      for (const i of Object.keys(game.party)) {
+        pW[i] = 'WON';
+      }
+      Rune.gameOver({
+        players: pW,
+        delayPopUp: true,
+      })
     }
+    //if (game.choiceTimer > -1) {
+      game.choiceTimer -= 1;
+      if (game.choiceTimer <= 0) {
+        if(game.choiceState == 'inAction') {
+          //
+          game.choiceState = 'inVoteNext';
+          game.choiceTimer = 10;
+        }
+        else if (game.choiceState == 'inVoteNext') {
+          game.choiceState = 'inAction';
+          let nextRoom = pathVoteResult(game);
+          if (nextRoom == '' || nextRoom == null) nextRoom = game.currentRoom.paths[0];
+          changeRoom(nextRoom, game)
+        }
+      }
+      else {
+        if (wholePartyChoseItem(game)) {
+          game.choiceTimer = 0;
+        }    
+      }
+    //}
   },
   actions: {
     increment: ({ amount }, { game }) => {
       game.count += amount
     },
-    voteNextRoom: ({vote}, {game}) => {
-      console.log('TODO');
-    },
     changeRoom: ({newRoom},{game}) => {
-      console.log('CHANGING ROOM TO ' + newRoom);
-      game.currentRoom = rooms[newRoom];
+      changeRoom(newRoom, game);
     },
     skipToNextRoom: ({},{game}) => {
       game.choiceTimer = 10;
       game.choiceState = 'inVoteNext';
-    }
+    },
+    chooseTreasure: ({playerId, treasureName},{game}) => {
+      if (!game.currentRoom.choseItem[playerId]) {
+        const slot = treasure[treasureName].slot;
+        game.party[playerId].equip[slot] = treasureName;
+        game.currentRoom.choseItem[playerId] = true;
+      }
+      else throw Rune.invalidAction();
+    },
+    votePath: ({playerId, pathName},{game}) => {
+      game.currentRoom.pathVotes[playerId] = pathName;
+    },
+    winBattle: ({},{game}) => {
+      for (const i of Object.keys(game.party)) {
+        game.party[i].curHp = game.party[i].maxHp;
+        game.currentRoom.choseItem[i] = true;
+      }
+    },
+    ackRestoration: ({},{game}) => {
+      for (const i of Object.keys(game.party)) {
+        game.party[i].curHp = game.party[i].maxHp;
+        game.currentRoom.choseItem[i] = true;
+      }
+    },
+    ackRune: ({},{game}) => {
+      for (const i of Object.keys(game.party)) {
+        game.currentRoom.choseItem[i] = true;
+      }
+    },
+    ackPlain: ({},{game}) => {
+      for (const i of Object.keys(game.party)) {
+        game.currentRoom.choseItem[i] = true;
+      }
+    },
   },
   events: {
     playerJoined: (playerId: string, {game}) => {
       console.log('player joined', game)
-      console.log(Rune.actions)
       game.party[playerId] = {
         maxHp: 40,
         curHp: 40,
@@ -204,6 +375,7 @@ Rune.initLogic({
         magAtk: 10,
         physDef: 10,
         magDef: 10,
+        equip: {helm: '', armor: '', weapon: '', accessory: '', artifact: ''}
       }
     },
     playerLeft(playerId: string, {game}) {
