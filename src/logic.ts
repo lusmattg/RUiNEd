@@ -8,15 +8,27 @@ export interface GameState {
   choiceTimer: number,
 }
 
-type GameActions = {
+export type GameActions = {
   increment: (params: { amount: number }) => void
-  voteNextRoom: (params: { vote: string }) => void
   changeRoom: (params: { newRoom: string }) => void
   chooseTreasure: (params: { treasureName: string, playerId: string, game: GameState }) => void
+  votePath: (params: {pathName: string, playerId: string}) => void;
+  ackRune: (params: {playerId: string, game: GameState}) => void;
+  ackRestoration: (params: {playerId: string, game: GameState}) => void;
+  winBattle: (params: {playerId: string, game: GameState}) => void;
+  ackPlain: (params: {playerId: string, game: GameState}) => void;
 }
 
 export type Party = {
   [key: string]: PartyMember,
+}
+
+export type Equipment = {
+  helm: string,
+  armor: string,
+  weapon: string,
+  accessory: string,
+  artifact: string,
 }
 
 export type PartyMember = {
@@ -26,7 +38,7 @@ export type PartyMember = {
   magAtk: number,
   physDef: number,
   magDef: number,
-  equip: object
+  equip: Equipment,
 }
 
 export type Enemy = {
@@ -40,7 +52,7 @@ export type Enemy = {
 
 export type Treasure = {
   name: string,
-  slot: string,
+  slot: keyof Equipment,
   effects: Array<Effect>
 }
 
@@ -57,13 +69,15 @@ export type Room = {
   sTreasure: Array<Treasure>,
   sLocked: boolean,
   sRune: RoomRune,
-  paths: Array<string>
+  paths: Array<string>,
+  choseItem: { [key: string]: boolean },
+  pathVotes: { [key: string]: string },
+  choseUpgrade: { [key: string]: boolean },
 }
 
 export type Effect = {
   name: string,
   duration: number,
-  effectType: string,
   magnitude: number,
   scope: string, // anyOne, self, party, enemy, enemyParty, all
   affectedStat: string // physAtk, magAtk, physDef, magDef, maxHp, curHp
@@ -96,7 +110,7 @@ const wholePartyVoted = (game: GameState) => {
 }
 
 const pathVoteResult = (game: GameState) => {
-  const candidates = {};
+  const candidates: Record<string, number> = {};
   let winner = '';
   let winnerVotes = 0;
   for (const i of Object.keys(game.currentRoom.pathVotes)) {
@@ -119,8 +133,12 @@ const pathVoteResult = (game: GameState) => {
   return winner;
 }
 
+const doNothingWith = (s: string) => {
+  console.log(s);
+}
 
-const treasure = {
+
+const treasure: Record<string, Treasure> = {
   'Emerald Sword': {
     name: 'Emerald Sword',
     slot: 'weapon',
@@ -163,7 +181,9 @@ const enemies = {
   }
 }
 
-const rooms: [key: string] = {
+doNothingWith(JSON.stringify(enemies)); //TODO: remove
+
+const rooms: Record<string, Room> = {
   'rTutorialRuneRoom': {
     name: 'Tutorial - Runes',
     intro: 'Mysterious etchings ahead',
@@ -172,7 +192,7 @@ const rooms: [key: string] = {
     sEnemies: [],
     sTreasure: [],
     sLocked: false,
-    sRune: null,
+    sRune: {name: ''},
     paths: ['rTutorialChoiceRoom'],
     pathVotes: {},
     choseItem: {},
@@ -186,7 +206,7 @@ const rooms: [key: string] = {
     sEnemies: [],
     sTreasure: [],
     sLocked: false,
-    sRune: null,
+    sRune: {name: ''},
     paths: ['rTutorialRuneRoom'],
     pathVotes: {},
     choseItem: {},
@@ -200,7 +220,7 @@ const rooms: [key: string] = {
     sEnemies: [],
     sTreasure: [],
     sLocked: false,
-    sRune: null,
+    sRune: {name: ''},
     paths: ['rTutorialRestorationRoom'],
     pathVotes: {},
     choseItem: {},
@@ -214,7 +234,7 @@ const rooms: [key: string] = {
     sEnemies: [],
     sTreasure: [treasure['Emerald Sword'],treasure['Ruby Staff'],treasure['Mythril Mail'],treasure['Rainbow Robe']],
     sLocked: false,
-    sRune: null,
+    sRune: {name: ''},
     paths: ['rTutorialEnemyRoom'],
     pathVotes: {},
     choseItem: {},
@@ -228,7 +248,7 @@ const rooms: [key: string] = {
     sEnemies: [],
     sTreasure: [],
     sLocked: false,
-    sRune: null,
+    sRune: {name: ''},
     paths: ['rWinRoom','rTutorialChoiceRoom'],
     pathVotes: {},
     choseItem: {},
@@ -242,7 +262,7 @@ const rooms: [key: string] = {
     sEnemies: [],
     sTreasure: [],
     sLocked: false,
-    sRune: null,
+    sRune: {name: ''},
     paths: [],
     pathVotes: {},
     choseItem: {},
@@ -289,7 +309,7 @@ Rune.initLogic({
     console.log(game.choiceState + ': ' + game.choiceTimer)
     //console.log(Rune.gameTimeInSeconds());
     if (game.currentRoom.sType == 'win') {
-      const pW = {};
+      const pW: Record<string, 'WON'> = {};
       for (const i of Object.keys(game.party)) {
         pW[i] = 'WON';
       }
@@ -314,9 +334,18 @@ Rune.initLogic({
         }
       }
       else {
-        if (wholePartyChoseItem(game)) {
-          game.choiceTimer = 0;
-        }    
+        if (game.choiceState == 'inAction') {
+          if (wholePartyChoseItem(game)) {
+            game.choiceTimer = 0;
+          }    
+        }
+        else if (game.choiceState == 'inVoteNext') {
+          if (wholePartyVoted(game)) {
+            let nextRoom = pathVoteResult(game);
+            if (nextRoom == '' || nextRoom == null) nextRoom = game.currentRoom.paths[0];
+            changeRoom(nextRoom, game)
+            }
+        }
       }
     //}
   },
@@ -326,10 +355,6 @@ Rune.initLogic({
     },
     changeRoom: ({newRoom},{game}) => {
       changeRoom(newRoom, game);
-    },
-    skipToNextRoom: ({},{game}) => {
-      game.choiceTimer = 10;
-      game.choiceState = 'inVoteNext';
     },
     chooseTreasure: ({playerId, treasureName},{game}) => {
       if (!game.currentRoom.choseItem[playerId]) {
@@ -342,24 +367,28 @@ Rune.initLogic({
     votePath: ({playerId, pathName},{game}) => {
       game.currentRoom.pathVotes[playerId] = pathName;
     },
-    winBattle: ({},{game}) => {
+    winBattle: ({playerId},{game}) => {
+      doNothingWith(playerId);
       for (const i of Object.keys(game.party)) {
         game.party[i].curHp = game.party[i].maxHp;
         game.currentRoom.choseItem[i] = true;
       }
     },
-    ackRestoration: ({},{game}) => {
+    ackRestoration: ({playerId},{game}) => {
+      doNothingWith(playerId);
       for (const i of Object.keys(game.party)) {
         game.party[i].curHp = game.party[i].maxHp;
         game.currentRoom.choseItem[i] = true;
       }
     },
-    ackRune: ({},{game}) => {
+    ackRune: ({playerId},{game}) => {
+      doNothingWith(playerId);
       for (const i of Object.keys(game.party)) {
         game.currentRoom.choseItem[i] = true;
       }
     },
-    ackPlain: ({},{game}) => {
+    ackPlain: ({playerId},{game}) => {
+      doNothingWith(playerId);
       for (const i of Object.keys(game.party)) {
         game.currentRoom.choseItem[i] = true;
       }

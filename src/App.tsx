@@ -1,8 +1,6 @@
-import React, { ReactElement, useEffect, useState } from "react"
-import reactLogo from "./assets/rune.svg"
-import viteLogo from "/vite.svg"
+import { ReactElement, useEffect, useState } from "react"
 import "./App.css"
-import { GameState, Room } from "./logic.ts"
+import { GameState} from "./logic.ts"
 
 function App() {
   const [game, setGame] = useState<GameState>()
@@ -16,6 +14,7 @@ function App() {
         setGame(newGame);
         setPlayers(players);
         setYourPlayerId(yourPlayerId);
+        console.log(players)
       },
     })
   }, [])
@@ -24,11 +23,15 @@ function App() {
     return <div>Loading...</div>
   }
 
+  if (!yourPlayerId) {
+    return <div>Loading...</div>
+  }
+
   const playerList: Array<ReactElement> = [];
   for (const i of Object.keys(players)) {
     playerList.push(
       <div>
-        <img src={players[i].avatarUrl} width='80%' />
+        <img src={players[i].avatarUrl} height='20em' />
         <div>{game.party[i] ? game.party[i].curHp : 0}</div>
       </div>
     )
@@ -39,7 +42,7 @@ function App() {
   </div>
 
   const timer = <div>
-    <div>{game.choiceTimer}</div>
+    <div className={'timer'}>{game.choiceTimer}</div>
   </div>
 
   const roomDisplay = <div>
@@ -48,20 +51,24 @@ function App() {
   </div>
 
   const nextRoomChoices: Array<ReactElement> = [];
-  Object.keys(game.currentRoom.paths).forEach( (nextRoomId: string) => {
-    nextRoomChoices.push(
-      <button onClick={() => Rune.actions.votePath({pathName: nextRoomId, playerId: yourPlayerId})}>
-        {game.currentRoom.paths[nextRoomId]}
-      </button>
-    )
+  Object.keys(game.currentRoom.paths).forEach( (nextRoomId) => {
+    const n = parseInt(nextRoomId);
+    const nextRoomName: string = game.currentRoom.paths[n];
+    if (yourPlayerId != undefined) {
+      nextRoomChoices.push(
+        <button onClick={() => Rune.actions.votePath({pathName: nextRoomName, playerId: yourPlayerId})}>
+          {game.currentRoom.paths[n]}
+        </button>
+      )
+    }
   });
 
   const wornEquipment: Array<ReactElement> = [];
-  const helm = game.party[yourPlayerId].equip['helm'];
-  const armor = game.party[yourPlayerId].equip['armor'];
-  const weapon = game.party[yourPlayerId].equip['weapon'];
-  const accessory = game.party[yourPlayerId].equip['accessory'];
-  const artifact = game.party[yourPlayerId].equip['artifact'];
+  const helm = yourPlayerId? game?.party?.[yourPlayerId]?.equip?.['helm'] : '';
+  const armor = yourPlayerId? game?.party?.[yourPlayerId]?.equip?.['armor'] : '';
+  const weapon = yourPlayerId? game?.party?.[yourPlayerId]?.equip?.['weapon'] : '';
+  const accessory = yourPlayerId? game?.party?.[yourPlayerId]?.equip?.['accessory'] : '';
+  const artifact = yourPlayerId? game?.party?.[yourPlayerId]?.equip?.['artifact'] : '';
   wornEquipment.push(<div>{helm}</div>)
   wornEquipment.push(<div>{armor}</div>)
   wornEquipment.push(<div>{weapon}</div>)
@@ -80,7 +87,7 @@ function App() {
           {hpBars}
           {equipDisplay}
           {roomDisplay}
-          <button onClick={() => Rune.actions.ackRune({game: game})}>Great!</button>
+          <button onClick={() => Rune.actions.ackRune({playerId: yourPlayerId, game: game})}>Gain Power</button>
       </div>);
     }
     else if (game.currentRoom.sType == 'restoration') {
@@ -91,7 +98,7 @@ function App() {
           {hpBars}
           {equipDisplay}
           {roomDisplay}
-          <button onClick={() => Rune.actions.ackRestoration({game: game})}>Great!</button>
+          <button onClick={() => Rune.actions.ackRestoration({playerId: yourPlayerId, game: game})}>Great!</button>
       </div>);
     }
     else if (game.currentRoom.sType == 'battle') {
@@ -102,7 +109,7 @@ function App() {
           {hpBars}
           {equipDisplay}
           {roomDisplay}
-          <button onClick={() => Rune.actions.winBattle({game: game})}>Cheat</button>
+          <button onClick={() => Rune.actions.winBattle({playerId: yourPlayerId, game: game})}>Cheat</button>
       </div>);
     }
     else if (game.currentRoom.sType == 'treasure') {
@@ -144,7 +151,7 @@ function App() {
             {hpBars}
             {equipDisplay}
             {roomDisplay}
-            <button onClick={() => Rune.actions.ackPlain({game: game})}>Ok!</button>
+            <button onClick={() => Rune.actions.ackPlain({playerId: yourPlayerId, game: game})}>Ok!</button>
         </div>);
   
     }
@@ -164,11 +171,7 @@ function App() {
         <div>
           Yikes
         </div>
-        <div>
-          <button onClick={() => Rune.actions.skipToNextRoom({game: game})}>
-            vote
-        </button>
-    
+        <div>    
         </div>
       </div>
     )
