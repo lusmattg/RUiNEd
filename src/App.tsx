@@ -1,6 +1,11 @@
 import { ReactElement, useEffect, useState } from "react"
 import "./App.css"
 import { GameState} from "./logic.ts"
+import greenCheck from './assets/greencheck.svg'
+import trEmsword from './assets/tr-emsword.png'
+import trMyth from './assets/tr-myth.png'
+import trRainb from './assets/tr-rainb.png'
+import trRubys from './assets/tr-rubys.png'
 
 function App() {
   const [game, setGame] = useState<GameState>()
@@ -29,10 +34,69 @@ function App() {
 
   const playerList: Array<ReactElement> = [];
   for (const i of Object.keys(players)) {
+
+
+
+    const wornEquipment: Array<ReactElement> = [];
+    const helm = game?.party?.[i]?.equip?.['helm'];
+    const armor = game?.party?.[i]?.equip?.['armor'];
+    const weapon = game?.party?.[i]?.equip?.['weapon'];
+    const accessory = game?.party?.[i]?.equip?.['accessory'];
+    switch (helm) {
+      case 'Party Helm':
+        wornEquipment.push(<div>{'test'}</div>)
+    }
+    switch (armor) {
+      case 'Rainbow Robe':
+        wornEquipment.push(<div><img src={trRainb} width='100%'/></div>);
+        break;
+      case 'Mythril Mail':
+        wornEquipment.push(<div><img src={trMyth} width='100%'/></div>)
+        break;
+        case 'Pinata Armor':
+          wornEquipment.push(<div><img src={trMyth} width='100%'/></div>)
+          break;
+      }
+    switch (weapon) {
+      case 'Emerald Sword':
+        wornEquipment.push(<div><img src={trEmsword} width='100%'/></div>);
+        break;
+      case 'Ruby Staff':
+        wornEquipment.push(<div><img src={trRubys} width='100%'/></div>)
+        break;
+      case 'Champagne Saber':
+        wornEquipment.push(<div><img src={trRubys} width='100%'/></div>)
+        break;
+    }
+    switch (accessory) {
+      case 'Balloon Lightning':
+        wornEquipment.push(<div>{'test'}</div>)
+    }
+
+    const equipDisplay = <div >
+      <div style={{display: 'grid', gridTemplateColumns: '50% 50%'}}>{wornEquipment}</div>
+    </div>
+
+
+    const checkDisp = game.currentRoom.choseItem[i] ? 'block' : 'none';
+    const hpP = game.party[i].curHp / game.party[i].maxHp * 100 + '%';
     playerList.push(
-      <div>
-        <img src={players[i].avatarUrl} height='20em' />
-        <div>{game.party[i] ? game.party[i].curHp : 0}</div>
+      <div className={'playerBox'}>
+        <div className={'playerName'}>{players[i].displayName}</div>
+        <div >
+          <div style={{height: '2em'}}>
+            <img src={players[i].avatarUrl} height={'100%'} />
+            <div style={{display: checkDisp}}>
+              <img src={greenCheck} height='10em' style={{  position: 'absolute', bottom: 0,  right: 0}}/>
+            </div>
+          </div>
+        </div>
+        <div className={'equipGrid'}>
+          {equipDisplay}
+        </div>
+        <div className={'lifebarred'}>
+          <div className={'lifebargreen'} style={{width: hpP }}></div>
+        </div>
       </div>
     )
   }
@@ -63,20 +127,7 @@ function App() {
     }
   });
 
-  const wornEquipment: Array<ReactElement> = [];
-  const helm = yourPlayerId? game?.party?.[yourPlayerId]?.equip?.['helm'] : '';
-  const armor = yourPlayerId? game?.party?.[yourPlayerId]?.equip?.['armor'] : '';
-  const weapon = yourPlayerId? game?.party?.[yourPlayerId]?.equip?.['weapon'] : '';
-  const accessory = yourPlayerId? game?.party?.[yourPlayerId]?.equip?.['accessory'] : '';
-  const artifact = yourPlayerId? game?.party?.[yourPlayerId]?.equip?.['artifact'] : '';
-  wornEquipment.push(<div>{helm}</div>)
-  wornEquipment.push(<div>{armor}</div>)
-  wornEquipment.push(<div>{weapon}</div>)
-  wornEquipment.push(<div>{accessory}</div>)
-  wornEquipment.push(<div>{artifact}</div>)
-  const equipDisplay = <div >
-    <div style={{display: 'grid', gridTemplateColumns: '20% 20% 20% 20% 20%'}}>{wornEquipment}</div>
-  </div>
+
 
   if (game.choiceState == 'inAction') {
     if (game.currentRoom.sType == 'rune') {
@@ -85,7 +136,6 @@ function App() {
       <div>
           {timer}
           {hpBars}
-          {equipDisplay}
           {roomDisplay}
           <button onClick={() => Rune.actions.ackRune({playerId: yourPlayerId, game: game})}>Gain Power</button>
       </div>);
@@ -96,7 +146,6 @@ function App() {
       <div>
           {timer}
           {hpBars}
-          {equipDisplay}
           {roomDisplay}
           <button onClick={() => Rune.actions.ackRestoration({playerId: yourPlayerId, game: game})}>Great!</button>
       </div>);
@@ -107,7 +156,6 @@ function App() {
       <div>
           {timer}
           {hpBars}
-          {equipDisplay}
           {roomDisplay}
           <button onClick={() => Rune.actions.winBattle({playerId: yourPlayerId, game: game})}>Cheat</button>
       </div>);
@@ -128,7 +176,6 @@ function App() {
         <div>
           {timer}
           {hpBars}
-          {equipDisplay}
           {roomDisplay}
           {treasureChoices}
           <div>Note: Equipment may replace items in current slots</div>
@@ -138,7 +185,6 @@ function App() {
           <div>
             {timer}
             {hpBars}
-            {equipDisplay}
             {roomDisplay}
           </div>
         );
@@ -149,7 +195,6 @@ function App() {
         <div>
             {timer}
             {hpBars}
-            {equipDisplay}
             {roomDisplay}
             <button onClick={() => Rune.actions.ackPlain({playerId: yourPlayerId, game: game})}>Ok!</button>
         </div>);
@@ -161,7 +206,6 @@ function App() {
         <div>
             {timer}
             {hpBars}
-            {equipDisplay}
             {roomDisplay}
         </div>);
   
@@ -186,7 +230,6 @@ function App() {
         <div>
           {timer}
           {hpBars}
-          {equipDisplay}
           {roomDisplay}
           <div>Vote for which room to go to next</div>
           <div>

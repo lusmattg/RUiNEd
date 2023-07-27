@@ -288,7 +288,7 @@ Rune.initLogic({
     for (const playerId of allPlayerIds) {
       startingParty[playerId] = {
         maxHp: 40,
-        curHp: 40,
+        curHp: 30,
         physAtk: 10,
         magAtk: 10,
         physDef: 10,
@@ -404,7 +404,7 @@ Rune.initLogic({
         magAtk: 10,
         physDef: 10,
         magDef: 10,
-        equip: {helm: '', armor: '', weapon: '', accessory: '', artifact: ''}
+        equip: {helm: '', armor: 'Mythril Mail', weapon: 'Emerald Sword', accessory: '', artifact: ''}
       }
     },
     playerLeft(playerId: string, {game}) {
