@@ -1,11 +1,19 @@
 import { ReactElement, useEffect, useState } from "react"
 import "./App.css"
-import { GameState} from "./logic.ts"
+import { GameState, powers, runes} from "./logic.ts"
 import greenCheck from './assets/greencheck.svg'
 import trEmsword from './assets/tr-emsword.png'
 import trMyth from './assets/tr-myth.png'
 import trRainb from './assets/tr-rainb.png'
 import trRubys from './assets/tr-rubys.png'
+import trPinata from './assets/tr-pinata.png'
+import trPHelm from './assets/tr-partyhelm.png'
+import trCSaber from './assets/tr-csaber.png'
+
+import rMightRune from './assets/runeatk.png'
+import rPowerRune from './assets/runemagatk.png'
+import rShieldRune from './assets/runephysdef.png'
+import rBarrierRune from './assets/runemagdef.png'
 
 function App() {
   const [game, setGame] = useState<GameState>()
@@ -32,6 +40,38 @@ function App() {
     return <div>Loading...</div>
   }
 
+  const getTreasureImage = (treasureName: string) : string => {
+    switch (treasureName) {
+      case 'Rainbow Robe':
+        return trRainb;
+      case 'Mythril Mail':
+        return trMyth;
+      case 'Pinata Armor':
+        return trPinata;
+      case 'Emerald Sword':
+        return trEmsword;
+      case 'Ruby Staff':
+        return trRubys;
+      case 'Champagne Saber':
+        return trCSaber;
+    }
+    return greenCheck;
+  }
+
+  const getRuneImage = (runeName: string) : string => {
+    switch (runeName) {
+      case 'Might Rune':
+        return rMightRune;
+      case 'Power Rune':
+        return rPowerRune;
+      case 'Shield Rune':
+        return rShieldRune;
+      case 'Barrier Rune':
+        return rBarrierRune;
+    }
+    return greenCheck;
+  }
+
   const playerList: Array<ReactElement> = [];
   for (const i of Object.keys(players)) {
 
@@ -42,36 +82,11 @@ function App() {
     const armor = game?.party?.[i]?.equip?.['armor'];
     const weapon = game?.party?.[i]?.equip?.['weapon'];
     const accessory = game?.party?.[i]?.equip?.['accessory'];
-    switch (helm) {
-      case 'Party Helm':
-        wornEquipment.push(<div>{'test'}</div>)
-    }
-    switch (armor) {
-      case 'Rainbow Robe':
-        wornEquipment.push(<div><img src={trRainb} width='100%'/></div>);
-        break;
-      case 'Mythril Mail':
-        wornEquipment.push(<div><img src={trMyth} width='100%'/></div>)
-        break;
-        case 'Pinata Armor':
-          wornEquipment.push(<div><img src={trMyth} width='100%'/></div>)
-          break;
-      }
-    switch (weapon) {
-      case 'Emerald Sword':
-        wornEquipment.push(<div><img src={trEmsword} width='100%'/></div>);
-        break;
-      case 'Ruby Staff':
-        wornEquipment.push(<div><img src={trRubys} width='100%'/></div>)
-        break;
-      case 'Champagne Saber':
-        wornEquipment.push(<div><img src={trRubys} width='100%'/></div>)
-        break;
-    }
-    switch (accessory) {
-      case 'Balloon Lightning':
-        wornEquipment.push(<div>{'test'}</div>)
-    }
+
+    wornEquipment.push(<div><img src={getTreasureImage(helm)} width='100%'/></div>)
+    wornEquipment.push(<div><img src={getTreasureImage(armor)} width='100%'/></div>)
+    wornEquipment.push(<div><img src={getTreasureImage(weapon)} width='100%'/></div>)
+    wornEquipment.push(<div><img src={getTreasureImage(accessory)} width='100%'/></div>)
 
     const equipDisplay = <div >
       <div style={{display: 'grid', gridTemplateColumns: '50% 50%'}}>{wornEquipment}</div>
@@ -118,10 +133,11 @@ function App() {
   Object.keys(game.currentRoom.paths).forEach( (nextRoomId) => {
     const n = parseInt(nextRoomId);
     const nextRoomName: string = game.currentRoom.paths[n];
+    const nextRoomIntro: string = game.currentRoom.pathIntros[n];
     if (yourPlayerId != undefined) {
       nextRoomChoices.push(
         <button onClick={() => Rune.actions.votePath({pathName: nextRoomName, playerId: yourPlayerId})}>
-          {game.currentRoom.paths[n]}
+          {nextRoomIntro}
         </button>
       )
     }
@@ -131,14 +147,47 @@ function App() {
 
   if (game.choiceState == 'inAction') {
     if (game.currentRoom.sType == 'rune') {
-      //
-      return(
-      <div>
+      const runeChoices: Array<ReactElement> = [];
+      for (const i of game.currentRoom.sRune) {
+        const mods = [];
+        const rune = runes[i];
+        for (const e of rune) {
+          mods.push(<div>{e.affectedStat} x{e.magnitude}</div>)
+        }
+        runeChoices.push(
+          <div className={'runeCard'} onClick={() => Rune.actions.chooseRune({game: game, rune: i, playerId: yourPlayerId})}>
+            <div>
+              <div>
+                {i}
+              </div>
+              <div className={'runeMods'}>
+                {mods}
+              </div>
+            </div>
+            <div style={{maxHeight: '2em'}}>
+              <img style={{height: '2em', position: 'absolute', right: '1em'}} src={getRuneImage(i)} height='100%'/>
+            </div>
+          </div>
+        )
+      }
+
+      if (!game.currentRoom.choseItem[yourPlayerId])
+        return(
+        <div>
           {timer}
           {hpBars}
           {roomDisplay}
-          <button onClick={() => Rune.actions.ackRune({playerId: yourPlayerId, game: game})}>Gain Power</button>
-      </div>);
+          {runeChoices}
+        </div>);
+      else 
+        return(
+          <div>
+            {timer}
+            {hpBars}
+            {roomDisplay}
+          </div>
+        );
+
     }
     else if (game.currentRoom.sType == 'restoration') {
       //
@@ -147,27 +196,79 @@ function App() {
           {timer}
           {hpBars}
           {roomDisplay}
-          <button onClick={() => Rune.actions.ackRestoration({playerId: yourPlayerId, game: game})}>Great!</button>
+          <button onClick={() => Rune.actions.ackRestoration({playerId: yourPlayerId, accepted: true, game: game})}>Drink</button>
+          <button onClick={() => Rune.actions.ackRestoration({playerId: yourPlayerId, accepted: false, game: game})}>Don't Drink</button>
       </div>);
     }
     else if (game.currentRoom.sType == 'battle') {
       //
+      const enemyList: Array<ReactElement> = [];
+      for (const e of game.battle.enemies) {
+        //
+        // valid attacks
+        const validAttacks: Array<ReactElement> = [];
+        for (const p of game.party[yourPlayerId].powers  ) {
+          console.log(p)
+          const pow = powers[p];
+          console.log(pow)
+          const scope = pow[0].scope;
+          if (scope == 'anyOne' || scope == 'enemy') {
+            validAttacks.push(
+              <div><button 
+                onClick={() => Rune.actions.attack({
+                  playerId: yourPlayerId,
+                  enemyName: e.name,
+                  attack: pow
+                })}
+                >{p}</button></div>
+            )
+          }
+        }
+        // enemy card
+        const eHpP = e.curHp / e.maxHp * 100 + '%';
+        const enemyCard = <div className={'enemyCard'}>
+          <div>{e.name}</div>
+          <div>
+            <div className={'lifebarred'}>
+              <div className={'lifebargreen'} style={{width: eHpP }}></div>
+            </div>
+          </div>
+          <div>{validAttacks}</div>
+        </div>
+        enemyList.push(enemyCard)
+      }
+
       return(
       <div>
           {timer}
           {hpBars}
           {roomDisplay}
           <button onClick={() => Rune.actions.winBattle({playerId: yourPlayerId, game: game})}>Cheat</button>
+          {enemyList}
       </div>);
     }
     else if (game.currentRoom.sType == 'treasure') {
       //
       const treasureChoices: Array<ReactElement> = [];
       for (const i of game.currentRoom.sTreasure) {
+        const mods = [];
+        for (const e of i.effects) {
+          mods.push(<div>{e.affectedStat} x{e.magnitude}</div>)
+        }
         treasureChoices.push(
-          <button onClick={() => Rune.actions.chooseTreasure({game: game, treasureName: i.name, playerId: yourPlayerId})}>
-            {i.name}
-          </button>
+          <div className={'treasureCard'} onClick={() => Rune.actions.chooseTreasure({game: game, treasureName: i.name, playerId: yourPlayerId})}>
+            <div>
+              <div>
+                {i.name}
+              </div>
+              <div className={'treasureMods'}>
+                {mods}
+              </div>
+            </div>
+            <div style={{maxHeight: '2em'}}>
+              <img style={{height: '2em', position: 'absolute', right: '1em'}} src={getTreasureImage(i.name)} height='100%'/>
+            </div>
+          </div>
         )
       }
 
@@ -188,6 +289,32 @@ function App() {
             {roomDisplay}
           </div>
         );
+    }
+    else if (game.currentRoom.sType == 'teacher') {
+      //
+
+      const powerChoices: Array<ReactElement> = [];
+      console.log(game.currentRoom.sPowers)
+      for (const i of game.currentRoom.sPowers) {
+        const pow = powers[i];
+        console.log(i);
+        console.log(pow);
+        powerChoices.push(
+          <div className={'powerCard'} onClick={() => {Rune.actions.choosePower({playerId: yourPlayerId, power: i, game: game})}}>
+            <div>{i}</div>
+            <div className={'powerMods'}></div>
+          </div>
+        )
+      }
+      return(
+        <div>
+            {timer}
+            {hpBars}
+            {roomDisplay}
+            {powerChoices}
+            <button onClick={() => Rune.actions.ackPlain({playerId: yourPlayerId, game: game})}>Ok!</button>
+        </div>);
+  
     }
     else if (game.currentRoom.sType == 'plain') {
       //
@@ -230,8 +357,7 @@ function App() {
         <div>
           {timer}
           {hpBars}
-          {roomDisplay}
-          <div>Vote for which room to go to next</div>
+          <div>Vote where to go next!</div>
           <div>
             {nextRoomChoices}
           </div>      

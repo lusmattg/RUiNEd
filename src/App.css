@@ -24,7 +24,6 @@
 
 .equipGrid {
     background-color: gray;
-    height: 4em;
 }
 
 .lifebarred {
@@ -38,4 +37,77 @@
     height: 10px;
     border-top-left-radius: 5px;
     border-bottom-left-radius: 5px;
+}
+
+.enemyCard {
+    border: 1px;
+    border-radius: 10px;
+    border-color: black;
+    border-style: solid;
+    padding: 4px;
+    margin: 2px;
+    box-shadow: 1px 1px 1px 1px rgba(0, 0, 0, 0.75);
+}
+
+.treasureCard {
+    border: 1px;
+    border-radius: 10px;
+    border-color: black;
+    border-style: solid;
+    padding: 4px;
+    margin: 2px;
+    box-shadow: 1px 1px 1px 1px rgba(0, 0, 0, 0.75);
+    font-family: sans-serif;
+    font-size: medium;
+    font-style: bold;
+    display: grid;
+    grid-template-columns: 50% 50%;
+}
+
+.treasureMods {
+    font-family: sans-serif;
+    font-size: x-small;
+    font-style: bold;
+}
+
+.runeCard {
+    border: 1px;
+    border-radius: 10px;
+    border-color: black;
+    border-style: solid;
+    padding: 4px;
+    margin: 2px;
+    box-shadow: 1px 1px 1px 1px rgba(0, 0, 0, 0.75);
+    font-family: sans-serif;
+    font-size: medium;
+    font-style: bold;
+    display: grid;
+    grid-template-columns: 50% 50%;
+}
+
+.runeMods {
+    font-family: sans-serif;
+    font-size: x-small;
+    font-style: bold;
+}
+
+.powerCard {
+    border: 1px;
+    border-radius: 10px;
+    border-color: black;
+    border-style: solid;
+    padding: 4px;
+    margin: 2px;
+    box-shadow: 1px 1px 1px 1px rgba(0, 0, 0, 0.75);
+    font-family: sans-serif;
+    font-size: medium;
+    font-style: bold;
+    display: grid;
+    grid-template-columns: 50% 50%;
+}
+
+.powerMods {
+    font-family: sans-serif;
+    font-size: x-small;
+    font-style: bold;
 }
