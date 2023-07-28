@@ -39,6 +39,16 @@
     border-bottom-left-radius: 5px;
 }
 
+.roomBox {
+    font-family: sans-serif;
+    font-size: medium;
+    border: 1px;
+    background-color: lightgray;
+    padding: 10px;
+    margin: 10px;
+    box-shadow: 1px 1px 1px 1px rgba(0, 0, 0, 0.75);
+}
+
 .enemyCard {
     border: 1px;
     border-radius: 10px;
@@ -110,4 +120,18 @@
     font-family: sans-serif;
     font-size: x-small;
     font-style: bold;
+}
+
+.battleButton {
+    font-family: sans-serif;
+    font-size: small;
+    font-style: bold;
+    background-color: orange;
+    border: 1px;
+    border-radius: 10px;
+    border-color: black;
+    border-style: solid;
+    padding: 4px;
+    margin: 2px;
+    box-shadow: 1px 1px 1px 1px rgba(0, 0, 0, 0.75);
 }

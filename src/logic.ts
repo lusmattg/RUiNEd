@@ -19,11 +19,12 @@ export type GameActions = {
   ackPlain: (params: {playerId: string, game: GameState}) => void;
   choosePower: (params: {power: string, playerId: string, game: GameState}) => void;
   chooseRune: (params: {rune: string, playerId: string, game: GameState}) => void;
-  attack: (params: {playerId: string, enemyName: string, attack: Array<Effect>, game: GameState}) => void;
+  attack: (params: {playerId: string, enemyName: string, attack: string, game: GameState}) => void;
 }
 
 export type Battle = {
   enemies: Array<Enemy>,
+  log: string,
 }
 
 export type Party = {
@@ -68,7 +69,7 @@ export type Treasure = {
 }
 
 export type Power = {
-  name: string,
+  name: string,  
   effects: Array<Effect>
 }
 
@@ -161,38 +162,38 @@ const treasure: Record<string, Treasure> = {
     name: 'Emerald Sword',
     slot: 'weapon',
     effects: [
-      { name: 'weaponStrBuff', duration: -1, magnitude: 4, scope: 'self', affectedStat: 'physAtk'  }
+      { name: 'weaponStrBuff', duration: -1, magnitude: 1.1, scope: 'self', affectedStat: 'physAtk'  }
     ]
   },
   'Ruby Staff': {
     name: 'Ruby Staff',
     slot: 'weapon',
     effects: [
-      { name: 'weaponMagBuff', duration: -1, magnitude: 4, scope: 'self', affectedStat: 'magAtk'}
+      { name: 'weaponMagBuff', duration: -1, magnitude: 1.1, scope: 'self', affectedStat: 'magAtk'}
     ]
   },
   'Mythril Mail': {
     name: 'Mythril Mail',
     slot: 'armor',
     effects: [
-      { name: 'armorDefBuff', duration: -1, magnitude: 4, scope: 'self', affectedStat: 'physDef'}
+      { name: 'armorDefBuff', duration: -1, magnitude: 1.1, scope: 'self', affectedStat: 'physDef'}
     ]
   },
   'Rainbow Robe': {
     name: 'Rainbow Robe',
     slot: 'armor',
     effects: [
-      { name: 'armorDefBuff', duration: -1, magnitude: 4, scope: 'self', affectedStat: 'magDef'}
+      { name: 'armorDefBuff', duration: -1, magnitude: 1.1, scope: 'self', affectedStat: 'magDef'}
     ]
   }
 }
 
 export const powers: Record<string, Array<Effect>> = {
-  'Heal':[{name: 'Heal', duration: -1, magnitude: 50, scope: 'ally', affectedStat: 'curHp'}],
-  'Death Darts':[{name: 'Death Darts', duration: -1, magnitude: 50, scope: 'enemyParty', affectedStat: 'curHp'}],
-  'Protect All':[{name: 'Protect All', duration: 5000, magnitude: 5, scope: 'party', affectedStat: 'physDef'}],
-  'Rally':[{name: 'Rally', duration: 5000, magnitude: 5, scope: 'party', affectedStat: 'physAtk'}],
-  'Punch': [{name: 'Punch', duration: -1, magnitude: 5, scope: 'enemy', affectedStat: 'curHp'}],
+  'Heal':[{name: 'Heal', duration: -1, magnitude: 2, scope: 'ally', affectedStat: 'curHp'}],
+  'Death Darts':[{name: 'Death Darts', duration: -1, magnitude: 1.5, scope: 'enemyParty', affectedStat: 'curHp'}],
+  'Protect All':[{name: 'Protect All', duration: 5000, magnitude: 1.1, scope: 'party', affectedStat: 'physDef'}],
+  'Rally':[{name: 'Rally', duration: 5000, magnitude: 1.1, scope: 'party', affectedStat: 'physAtk'}],
+  'Punch': [{name: 'Punch', duration: -1, magnitude: 0.8, scope: 'enemy', affectedStat: 'curHp'}],
 }
 
 export const runes: Record<string, Array<Effect>> = {
@@ -275,8 +276,8 @@ const rooms: Record<string, Room> = {
     sLocked: false,
     sRune: [],
     sPowers: [],
-    paths: ['rTutorialRuneRoom'],
-    pathIntros: ['Mysterious etchings ahead'],
+    paths: ['rTutorialChoiceRoom'],
+    pathIntros: ['The path forks ahead'],
     pathVotes: {},
     choseItem: {},
     choseUpgrade: {},
@@ -305,8 +306,8 @@ const rooms: Record<string, Room> = {
     sLocked: false,
     sRune: [],
     sPowers: [],
-    paths: ['rTutorialEnemyRoom'],
-    pathIntros: ['Is that danger ahead?'],
+    paths: ['rTutorialRuneRoom'],
+    pathIntros: ['Mysterious etchings ahead'],
     pathVotes: {},
     choseItem: {},
     choseUpgrade: {},
@@ -335,8 +336,8 @@ const rooms: Record<string, Room> = {
     sLocked: false,
     sRune: [],
     sPowers: ['Heal', 'Death Darts','Protect All','Rally'],
-    paths: ['rTutorialChoiceRoom'],
-    pathIntros: ['The path forks ahead'],
+    paths: ['rTutorialEnemyRoom'],
+    pathIntros: ['Is that danger ahead?'],
     pathVotes: {},
     choseItem: {},
     choseUpgrade: {},
@@ -392,11 +393,29 @@ const getBattleEnemyId = (enemyName: string, game: GameState) => {
   return -1;
 }
 
-const resolveImmediateAttack = (e: Effect, playerId: string, enemyName: string, game: GameState) => {
+const getBuffs = (stat: string, playerId: string, game: GameState) => {
+  let result = 1;
+
+  return result;
+}
+
+const resolveImmediateAttack = (e: Effect, playerId: string, enemyName: string, attackName: string, game: GameState) => {
   doNothingWith(playerId);
+  const pl = game.party[playerId];
+  const dmg = pl['physAtk'] * getBuffs('physAtk',playerId,game) * e.magnitude;
+  
+  doNothingWith(attackName);
   if (e.affectedStat == 'curHp') {
     const enemyId: number = getBattleEnemyId(enemyName, game);
-    game.battle.enemies[enemyId].curHp -= e.magnitude;
+    game.battle.enemies[enemyId].curHp -= dmg;
+    if (dmg >= 0) {
+      const l = '\n' + 'player dealt ' + dmg + ' damage to ' + enemyName;
+      game.battle.log += l;
+    }
+    else {
+      const l = '\n' + 'player healed ' + dmg + ' damage to ' + enemyName;
+      game.battle.log += l;
+    }
   }
   else {
     console.log('Bad effect')
@@ -415,6 +434,43 @@ const tpk = (game: GameState) => {
     if (game.party[i].curHp > 0) return false;
   }
   return true;
+}
+
+const handleAttack = (playerId: string, enemyName: string, attack: string, game: GameState) => {
+  const pow = powers[attack];
+  console.log('Power is ', pow)
+  for (const e of pow) {
+    console.log(e)
+    if (e.scope == 'self') {
+      //
+    }
+    else if (e.scope == 'player') {
+      //
+    }
+    else if (e.scope == 'enemy') {
+      if (e.duration == -1) {
+        resolveImmediateAttack(e, playerId, enemyName, attack, game);
+      }
+    }
+    else if (e.scope == 'party') {
+      //
+    }
+    else if (e.scope == 'enemyParty') {
+      //
+      if (e.duration == -1) {
+        for (const en of game.battle.enemies) {
+          resolveImmediateAttack(e, playerId, en.name, attack, game);
+        }
+      }
+    }
+    else if (e.scope == 'all') {
+      //
+    }
+    else {
+      console.log('Bad scope ', e.scope)
+    }
+  }
+
 }
 
 Rune.initLogic({
@@ -440,7 +496,7 @@ Rune.initLogic({
     return { 
       count: 0,
       //currentRoom: rooms['rTutorialTreasureRoom'],
-      currentRoom: rooms['rTutorialRuneRoom'],
+      currentRoom: rooms['rTutorialTeacherRoom'],
       party: startingParty,
       choiceState: 'inAction',
       choiceTimer: 60,
@@ -461,7 +517,6 @@ Rune.initLogic({
     else if (game.currentRoom.sType == 'battle') {
       if (battleIsOver(game)) {
         for (const i of Object.keys(game.party)) {
-          game.party[i].curHp = game.party[i].maxHp;
           game.currentRoom.choseItem[i] = true;
         }
       }
@@ -543,9 +598,8 @@ Rune.initLogic({
     },
     winBattle: ({playerId},{game}) => {
       doNothingWith(playerId);
-      for (const i of Object.keys(game.party)) {
-        game.party[i].curHp = game.party[i].maxHp;
-        game.currentRoom.choseItem[i] = true;
+      for (const e of game.battle.enemies) {  
+        e.curHp = 0;
       }
     },
     ackRestoration: ({playerId, accepted},{game}) => {
@@ -559,16 +613,8 @@ Rune.initLogic({
       }
     },
     attack: ({playerId, enemyName, attack},{game}) => {
-      console.log(playerId + ' attacks ' + enemyName + ' with ' + attack);
-      for (const e of attack) {
-        console.log(e)
-        if (e.duration == -1) {
-          resolveImmediateAttack(e, playerId, enemyName, game);
-        }
-        else {
-          //
-        }
-      }
+      console.log(playerId + ' attacks ' + enemyName + ' with ' + JSON.stringify(attack));
+      handleAttack(playerId, enemyName, attack, game);
     }
   },
   events: {

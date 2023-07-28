@@ -106,9 +106,6 @@ function App() {
             </div>
           </div>
         </div>
-        <div className={'equipGrid'}>
-          {equipDisplay}
-        </div>
         <div className={'lifebarred'}>
           <div className={'lifebargreen'} style={{width: hpP }}></div>
         </div>
@@ -124,9 +121,9 @@ function App() {
     <div className={'timer'}>{game.choiceTimer}</div>
   </div>
 
-  const roomDisplay = <div>
-    <div>{game.currentRoom.name}</div>
-    <div>{game.currentRoom.desc}</div>    
+  const roomDisplay = <div className={'roomBox'}>
+    <div style={{textAlign: 'center', fontStyle: 'bold'}}>{game.currentRoom.name}</div>
+    <div style={{fontSize: 'small'}}>{game.currentRoom.desc}</div>    
   </div>
 
   const nextRoomChoices: Array<ReactElement> = [];
@@ -202,25 +199,39 @@ function App() {
     }
     else if (game.currentRoom.sType == 'battle') {
       //
+      const validGlobalMoves: Array<ReactElement> = [];
+      for (const p of game.party[yourPlayerId].powers  ) {
+        const pow = powers[p];
+        const scope = pow[0].scope;
+        if (scope == 'self' || scope == 'party' || scope == 'enemyParty' || scope == 'all') { 
+          validGlobalMoves.push(
+            <button className='battleButton'
+              onClick={() => Rune.actions.attack({
+                playerId: yourPlayerId,
+                enemyName: 'na',
+                attack: p,
+              })}
+              >{p}</button>
+          )
+        }
+      }
       const enemyList: Array<ReactElement> = [];
       for (const e of game.battle.enemies) {
         //
         // valid attacks
         const validAttacks: Array<ReactElement> = [];
         for (const p of game.party[yourPlayerId].powers  ) {
-          console.log(p)
           const pow = powers[p];
-          console.log(pow)
           const scope = pow[0].scope;
           if (scope == 'anyOne' || scope == 'enemy') {
             validAttacks.push(
-              <div><button 
+              <button className='battleButton'
                 onClick={() => Rune.actions.attack({
                   playerId: yourPlayerId,
                   enemyName: e.name,
-                  attack: pow
+                  attack: p
                 })}
-                >{p}</button></div>
+                >{p}</button>
             )
           }
         }
@@ -244,7 +255,9 @@ function App() {
           {hpBars}
           {roomDisplay}
           <button onClick={() => Rune.actions.winBattle({playerId: yourPlayerId, game: game})}>Cheat</button>
+          {validGlobalMoves}
           {enemyList}
+          <textarea value={game.battle.log} readOnly={true} style={{width: '100%', height: '10em'}}></textarea>
       </div>);
     }
     else if (game.currentRoom.sType == 'treasure') {
