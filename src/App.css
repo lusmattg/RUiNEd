@@ -7,6 +7,10 @@
     text-align: center;
 }
 
+.greenCheck {
+    color: green;
+}
+
 .playerBox {
     border: 1px;
     border-radius: 10px;
@@ -76,6 +80,14 @@
     grid-template-columns: 50% 50%;
 }
 
+.treasureCard:hover {
+    transform: scale(1.05);  
+  }
+
+.treasureCard:active {
+    background-color: lightseagreen;
+}
+
 .treasureMods {
     font-family: sans-serif;
     font-size: x-small;
@@ -96,6 +108,16 @@
     display: grid;
     grid-template-columns: 50% 50%;
 }
+
+.runeCard:hover {
+    /* state on hover */
+    transform: scale(1.05);  /* 1.1 means 10% larger */
+  }
+
+.runeCard:active {
+    background-color: lightseagreen;
+}
+
 
 .runeMods {
     font-family: sans-serif;
@@ -118,11 +140,47 @@
     grid-template-columns: 50% 50%;
 }
 
+.powerCard:hover {
+    /* state on hover */
+    transform: scale(1.05);  /* 1.1 means 10% larger */
+  }
+
+.powerCard:active {
+    background-color: lightseagreen;
+}
+
+
 .powerMods {
     font-family: sans-serif;
     font-size: x-small;
     font-style: bold;
 }
+
+.fountainButton {
+    font-family: sans-serif;
+    font-size: small;
+    font-style: bold;
+    background-color: lightblue;
+    border: 1px;
+    border-radius: 10px;
+    border-color: black;
+    border-style: solid;
+    padding: 4px;
+    margin: 2px;
+    height: 4em;
+    min-width: 4em;
+    box-shadow: 1px 1px 1px 1px rgba(0, 0, 0, 0.75);
+}
+
+.fountainButton:hover {
+    /* state on hover */
+    transform: scale(1.1);  /* 1.1 means 10% larger */
+  }
+
+.fountainButton:active {
+    background-color: lightseagreen;
+}
+
 
 .battleButton {
     font-family: sans-serif;
@@ -142,3 +200,36 @@
     /* state on hover */
     transform: scale(1.1);  /* 1.1 means 10% larger */
   }
+
+.battleButton:active {
+    background-color: lightseagreen;
+}
+
+
+.pathChoices {
+    display: grid;
+    padding: 20px;
+}
+
+.pathButton {
+    font-family: sans-serif;
+    font-size: small;
+    font-style: bold;
+    border: 1px;
+    border-radius: 2px;
+    border-color: black;
+    border-style: solid;
+    padding: 4px;
+    margin: 5px;
+    box-shadow: 1px 1px 1px 1px rgba(0, 0, 0, 0.75);
+    height: 4em;
+}
+
+.pathButton:hover {
+    /* state on hover */
+    transform: scale(1.1);  /* 1.1 means 10% larger */
+  }
+
+.pathButton:active {
+    background-color: lightseagreen;
+}

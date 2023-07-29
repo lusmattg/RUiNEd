@@ -25,6 +25,7 @@ export type GameActions = {
 export type Battle = {
   enemies: Array<Enemy>,
   log: string,
+  initiative: Record<string, number>,
 }
 
 export type Party = {
@@ -36,16 +37,14 @@ export type Equipment = {
   armor: string,
   weapon: string,
   accessory: string,
-  artifact: string,
 }
 
 export type PartyMember = {
   maxHp: number,
   curHp: number,
-  physAtk: number,
-  magAtk: number,
-  physDef: number,
-  magDef: number,
+  atk: number,
+  def: number,
+  spd: number,
   equip: Equipment,
   powers: Array<string>,
   runes: Array<string>,
@@ -55,10 +54,9 @@ export type Enemy = {
   name: string,
   maxHp: number,
   curHp: number,
-  physAtk: number,
-  magAtk: number,
-  physDef: number,
-  magDef: number,
+  atk: number,
+  def: number,
+  spd: number,
   attacks: Record<string,Array<Effect>>,
 }
 
@@ -162,74 +160,99 @@ const treasure: Record<string, Treasure> = {
     name: 'Emerald Sword',
     slot: 'weapon',
     effects: [
-      { name: 'weaponStrBuff', duration: -1, magnitude: 1.1, scope: 'self', affectedStat: 'physAtk'  }
+      { name: 'weaponStrBuff', duration: -1, magnitude: 1.2, scope: 'self', affectedStat: 'atk'  }
     ]
   },
   'Ruby Staff': {
     name: 'Ruby Staff',
     slot: 'weapon',
     effects: [
-      { name: 'weaponMagBuff', duration: -1, magnitude: 1.1, scope: 'self', affectedStat: 'magAtk'}
+      { name: 'weaponMagBuff', duration: -1, magnitude: 1.1, scope: 'self', affectedStat: 'atk'}
     ]
   },
   'Mythril Mail': {
     name: 'Mythril Mail',
     slot: 'armor',
     effects: [
-      { name: 'armorDefBuff', duration: -1, magnitude: 1.1, scope: 'self', affectedStat: 'physDef'}
+      { name: 'armorDefBuff', duration: -1, magnitude: 1.2, scope: 'self', affectedStat: 'def'}
     ]
   },
   'Rainbow Robe': {
     name: 'Rainbow Robe',
     slot: 'armor',
     effects: [
-      { name: 'armorDefBuff', duration: -1, magnitude: 1.1, scope: 'self', affectedStat: 'magDef'}
+      { name: 'armorDefBuff', duration: -1, magnitude: 1.1, scope: 'self', affectedStat: 'def'}
+    ]
+  },
+  'Party Helm': {
+    name: 'Party Helm',
+    slot: 'helm',
+    effects: [
+      { name: 'armorDefBuff', duration: -1, magnitude: 1.1, scope: 'self', affectedStat: 'def'}
+    ]
+  },
+  'Pinata Armor': {
+    name: 'Pinata Armor',
+    slot: 'armor',
+    effects: [
+      { name: 'armorDefBuff', duration: -1, magnitude: 1.15, scope: 'self', affectedStat: 'def'}
+    ]
+  },
+  'Champagne Saber': {
+    name: 'Champagne Saber',
+    slot: 'weapon',
+    effects: [
+      { name: 'weaponAtkBuff', duration: -1, magnitude: 1.15, scope: 'self', affectedStat: 'atk'}
+    ]
+  },
+  'Balloon Lightning': {
+    name: 'Balloon Lightning',
+    slot: 'accessory',
+    effects: [
+      { name: 'weaponAtkBuff', duration: -1, magnitude: 1.15, scope: 'self', affectedStat: 'atk'}
     ]
   }
+
+
 }
 
 export const powers: Record<string, Array<Effect>> = {
   'Heal':[{name: 'Heal', duration: -1, magnitude: 2, scope: 'ally', affectedStat: 'curHp'}],
   'Death Darts':[{name: 'Death Darts', duration: -1, magnitude: 1.5, scope: 'enemyParty', affectedStat: 'curHp'}],
-  'Protect All':[{name: 'Protect All', duration: 5000, magnitude: 1.1, scope: 'party', affectedStat: 'physDef'}],
-  'Rally':[{name: 'Rally', duration: 5000, magnitude: 1.1, scope: 'party', affectedStat: 'physAtk'}],
   'Punch': [{name: 'Punch', duration: -1, magnitude: 0.8, scope: 'enemy', affectedStat: 'curHp'}],
 }
 
 export const runes: Record<string, Array<Effect>> = {
-  'Might Rune': [{name: 'Might Rune', duration: -1, magnitude: 5, scope: 'self', affectedStat: 'physAtk'}],
-  'Power Rune': [{name: 'Power Rune', duration: -1, magnitude: 5, scope: 'self', affectedStat: 'magAtk'}],
-  'Shield Rune': [{name: 'Shield Rune', duration: -1, magnitude: 5, scope: 'self', affectedStat: 'physDef'}],
-  'Barrier Rune': [{name: 'Barrier Rune', duration: -1, magnitude: 5, scope: 'self', affectedStat: 'magDef'}],
+  'Might Rune': [{name: 'Might Rune', duration: -1, magnitude: 1, scope: 'self', affectedStat: 'atk'}],
+  'Shield Rune': [{name: 'Shield Rune', duration: -1, magnitude: 1, scope: 'self', affectedStat: 'def'}],
+  'Health Rune': [{name: 'Health Rune', duration: -1, magnitude: 1, scope: 'self', affectedStat: 'maxHp'}],
+  'Speed Rune': [{name: 'Speed Rune', duration: -1, magnitude: 1, scope: 'self', affectedStat: 'spd'}],
 }
 
 const enemies: Record<string, Enemy> = {
-  'eWhiteGem': {
-    name: 'White Gem',
-    maxHp: 10,
-    curHp: 10,
-    physAtk: 5,
-    magAtk: 5,
-    physDef: 5,
-    magDef: 5,
+  'Ogre': {
+    name: 'Ogre',
+    maxHp: 50,
+    curHp: 50,
+    atk: 50,
+    def: 5,
+    spd: 0.25,
     attacks: {
-      'Barrier': [
-        { name: 'White Gem Phys Barrier', duration: 1000, magnitude: 50, scope: 'enemyParty', affectedStat: 'physDef' },
-        { name: 'White Gem Mag Barrier', duration: 1000, magnitude: 50, scope: 'enemyParty', affectedStat: 'magDef' }
+      'Smash': [
+        { name: 'Ogre Smash', duration: -1, magnitude: 50, scope: 'party', affectedStat: 'curHp' },
       ]
     }
   },
-  'eGemKeeper': {
-    name: 'Gem Keeper',
+  'Gnat Swarm': {
+    name: 'Gnat Swarm',
     maxHp: 10,
     curHp: 10,
-    physAtk: 5,
-    magAtk: 5,
-    physDef: 5,
-    magDef: 5,
+    atk: 1,
+    def: 1,
+    spd: 5,
     attacks: {
-      'Chisel': [
-        { name: 'Gem Keeper Phys Debuff', duration: -1, magnitude: -5, scope: 'player', affectedStat: 'curHp' },
+      'Bite': [
+        { name: 'Gnat Bite', duration: -1, magnitude: 1, scope: 'player', affectedStat: 'curHp' },
       ]
     }
   },
@@ -237,10 +260,9 @@ const enemies: Record<string, Enemy> = {
     name: 'Green Gem',
     maxHp: 10,
     curHp: 10,
-    physAtk: 5,
-    magAtk: 5,
-    physDef: 5,
-    magDef: 5,
+    atk: 5,
+    def: 5,
+    spd: 1,
     attacks: {
       'Heal': [
         { name: 'Green Gem Heal', duration: -1, magnitude: 50, scope: 'enemyParty', affectedStat: 'curHp' },
@@ -259,7 +281,7 @@ const rooms: Record<string, Room> = {
     sEnemies: [],
     sTreasure: [],
     sLocked: false,
-    sRune: ['Might Rune','Power Rune','Shield Rune','Barrier Rune'],
+    sRune: ['Might Rune','Shield Rune','Health Rune','Speed Rune'],
     sPowers: [],
     paths: ['rTutorialTeacherRoom'],
     pathIntros: ['A teacher ahead'],
@@ -284,9 +306,9 @@ const rooms: Record<string, Room> = {
   },
   'rTutorialEnemyRoom':{
     name: 'Tutorial - Enemies',
-    desc: 'In RUiNEd, you\'ll encounter monsters! In this fight, try taking out the White Gem first!',
+    desc: 'In RUiNEd, you\'ll encounter monsters! In this fight, take out the Ogre before it can hit you!',
     sType: 'battle',
-    sEnemies: ['eWhiteGem','eGemKeeper','eGreenGem'],
+    sEnemies: ['Ogre','Gnat Swarm','eGreenGem'],
     sTreasure: [],
     sLocked: false,
     sRune: [],
@@ -302,7 +324,7 @@ const rooms: Record<string, Room> = {
     desc: 'In RUiNEd, you\'ll find treasure! Choose one now!',
     sType: 'treasure',
     sEnemies: [],
-    sTreasure: [treasure['Emerald Sword'],treasure['Ruby Staff'],treasure['Mythril Mail'],treasure['Rainbow Robe']],
+    sTreasure: [treasure['Party Helm'],treasure['Pinata Armor'],treasure['Champagne Saber'],treasure['Balloon Lightning']],
     sLocked: false,
     sRune: [],
     sPowers: [],
@@ -372,10 +394,9 @@ const changeRoom = (newRoom: string, game: GameState) => {
         name: enemies[e].name,
         maxHp: enemies[e].maxHp,
         curHp: enemies[e].maxHp,
-        physAtk: enemies[e].physAtk,
-        magAtk: enemies[e].magAtk,
-        physDef: enemies[e].physDef,
-        magDef: enemies[e].magDef,
+        atk: enemies[e].atk,
+        def: enemies[e].def,
+        spd: enemies[e].spd,
         attacks: enemies[e].attacks
       };
       game.battle.enemies.push(enemy);
@@ -394,16 +415,37 @@ const getBattleEnemyId = (enemyName: string, game: GameState) => {
   return -1;
 }
 
-const getBuffs = (stat: string, playerId: string, game: GameState) => {
+const getEquipBuffs = (stat: string, playerId: string, game: GameState) => {
   let result = 1;
+  for (const b of Object.values(game.party[playerId].equip)) {
+    const equip = treasure[b]; 
+    if (equip && equip.effects) {
+      for (const e of equip.effects) {
+        if (e.affectedStat == stat) result *= e.magnitude;
+      }
+    }
+  }
 
   return result;
+}
+
+const getRuneBuffs = (stat: string, playerId: string, game: GameState) => {
+  let result = 0;
+
+  for (const b of Object.values(game.party[playerId].runes)) {
+    const run = runes[b]; 
+    for (const e of run) {
+      if (e.affectedStat == stat) result += e.magnitude;
+    }
+  }
+  return result;
+
 }
 
 const resolveImmediateAttack = (e: Effect, playerId: string, enemyName: string, attackName: string, game: GameState) => {
   doNothingWith(playerId);
   const pl = game.party[playerId];
-  const dmg = pl['physAtk'] * getBuffs('physAtk',playerId,game) * e.magnitude;
+  const dmg = Math.floor((pl['atk'] + getRuneBuffs('atk',playerId,game)) * getEquipBuffs('atk',playerId,game) * e.magnitude);
   
   doNothingWith(attackName);
   if (e.affectedStat == 'curHp') {
@@ -485,11 +527,10 @@ Rune.initLogic({
       startingParty[playerId] = {
         maxHp: 40,
         curHp: 30,
-        physAtk: 10,
-        magAtk: 10,
-        physDef: 10,
-        magDef: 10,
-        equip: {helm: '', armor: '', weapon: '', accessory: '', artifact: ''},
+        atk: 10,
+        def: 10,
+        spd: 1,
+        equip: {helm: '', armor: '', weapon: '', accessory: ''},
         powers: ['Punch'],
         runes: [],
       };
@@ -497,12 +538,12 @@ Rune.initLogic({
     }
     return { 
       count: 0,
-      //currentRoom: rooms['rTutorialTreasureRoom'],
-      currentRoom: rooms['rTutorialTeacherRoom'],
+      currentRoom: rooms['rTutorialTreasureRoom'],
+      //currentRoom: rooms['rTutorialTeacherRoom'],
       party: startingParty,
       choiceState: 'inAction',
       choiceTimer: 60,
-      battle: {enemies: []}
+      battle: {enemies: [], log: '', initiative: {}},
     }
   },
   update: ({game}) => {
@@ -513,7 +554,7 @@ Rune.initLogic({
       }
       Rune.gameOver({
         players: pW,
-        delayPopUp: true,
+        delayPopUp: false,
       })
     }
     else if (game.currentRoom.sType == 'battle') {
@@ -534,6 +575,15 @@ Rune.initLogic({
       }
       else {
         game.choiceTimer = 60;
+        for (const p of Object.keys(game.party)) {
+          if (!game.battle.initiative[p]) game.battle.initiative[p] = 0;
+          game.battle.initiative[p] += (getRuneBuffs('spd',p,game) + game.party[p].spd);
+        }
+
+        for (const e of game.battle.enemies) {
+          if (!game.battle.initiative[e.name]) game.battle.initiative[e.name] = 0;
+          game.battle.initiative[e.name] += e.spd;
+        }
       }
     }
 
@@ -625,11 +675,10 @@ Rune.initLogic({
       game.party[playerId] = {
         maxHp: 40,
         curHp: 40,
-        physAtk: 10,
-        magAtk: 10,
-        physDef: 10,
-        magDef: 10,
-        equip: {helm: '', armor: 'Mythril Mail', weapon: 'Emerald Sword', accessory: '', artifact: ''},
+        atk: 10,
+        def: 10,
+        spd: 1,
+        equip: {helm: '', armor: 'Mythril Mail', weapon: 'Emerald Sword', accessory: ''},
         powers: ['Punch'],
         runes: [],
       }
