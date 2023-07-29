@@ -380,6 +380,7 @@ const changeRoom = (newRoom: string, game: GameState) => {
       };
       game.battle.enemies.push(enemy);
     }
+    game.battle.log = '';
   }
   else {
     game.battle.enemies = [];
@@ -408,6 +409,7 @@ const resolveImmediateAttack = (e: Effect, playerId: string, enemyName: string, 
   if (e.affectedStat == 'curHp') {
     const enemyId: number = getBattleEnemyId(enemyName, game);
     game.battle.enemies[enemyId].curHp -= dmg;
+    if (game.battle.enemies[enemyId].curHp < 0) game.battle.enemies[enemyId].curHp = 0;
     if (dmg >= 0) {
       const l = '\n' + 'player dealt ' + dmg + ' damage to ' + enemyName;
       game.battle.log += l;

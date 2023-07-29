@@ -1,4 +1,4 @@
-import { ReactElement, useEffect, useState } from "react"
+import { ReactElement, useEffect, useState, useRef } from "react"
 import "./App.css"
 import { GameState, powers, runes} from "./logic.ts"
 import greenCheck from './assets/greencheck.svg'
@@ -20,6 +20,7 @@ function App() {
   const [players, setPlayers] = useState<any>();
   const [yourPlayerId, setYourPlayerId] = useState<string>();
 
+  const battleLogText = useRef();
   
   useEffect(() => {
     Rune.initClient({
@@ -30,6 +31,7 @@ function App() {
         console.log(players)
       },
     })
+    battleLogText.scrollTop = battleLogText.scrollHeight;
   }, [])
 
   if (!game) {
@@ -220,24 +222,28 @@ function App() {
         //
         // valid attacks
         const validAttacks: Array<ReactElement> = [];
-        for (const p of game.party[yourPlayerId].powers  ) {
-          const pow = powers[p];
-          const scope = pow[0].scope;
-          if (scope == 'anyOne' || scope == 'enemy') {
-            validAttacks.push(
-              <button className='battleButton'
-                onClick={() => Rune.actions.attack({
-                  playerId: yourPlayerId,
-                  enemyName: e.name,
-                  attack: p
-                })}
-                >{p}</button>
-            )
+        if (e.curHp > 0) {
+          for (const p of game.party[yourPlayerId].powers  ) {
+            const pow = powers[p];
+            const scope = pow[0].scope;
+            if (scope == 'anyOne' || scope == 'enemy') {
+              validAttacks.push(
+                <button className='battleButton'
+                  onClick={() => Rune.actions.attack({
+                    playerId: yourPlayerId,
+                    enemyName: e.name,
+                    attack: p
+                  })}
+                  >{p}</button>
+              )
+            }
           }
         }
         // enemy card
         const eHpP = e.curHp / e.maxHp * 100 + '%';
-        const enemyCard = <div className={'enemyCard'}>
+        let styleOverride = {};
+        if (e.curHp <= 0) styleOverride = {backgroundColor: 'gray'};
+        const enemyCard = <div style={styleOverride} className={'enemyCard'} >
           <div>{e.name}</div>
           <div>
             <div className={'lifebarred'}>
@@ -256,8 +262,8 @@ function App() {
           {roomDisplay}
           <button onClick={() => Rune.actions.winBattle({playerId: yourPlayerId, game: game})}>Cheat</button>
           {validGlobalMoves}
-          {enemyList}
-          <textarea value={game.battle.log} readOnly={true} style={{width: '100%', height: '10em'}}></textarea>
+          <div style={{display: 'grid', gridTemplateColumns: '50% 50%'}}>{enemyList}</div>
+          <textarea ref={battleLogText} value={game.battle.log} readOnly={true} style={{width: '100%', height: '10em'}}></textarea>
       </div>);
     }
     else if (game.currentRoom.sType == 'treasure') {
