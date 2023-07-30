@@ -151,7 +151,11 @@ const pathVoteResult = (game: GameState) => {
 }
 
 const doNothingWith = (s: string) => {
-  console.log(s);
+  let z = 0;
+  if (s) z = z + 1;
+  if (z) {
+    //
+  }
 }
 
 
@@ -478,7 +482,7 @@ const resolveImmediateAttack = (e: Effect, playerId: string, enemyName: string, 
     }
   }
   else {
-    console.log('Bad effect')
+    //
   }
 }
 
@@ -525,7 +529,7 @@ const handleAttack = (playerId: string, enemyName: string, attack: string, game:
       //
     }
     else {
-      console.log('Bad scope ', e.scope)
+      //
     }
   }
 
@@ -636,7 +640,7 @@ Rune.initLogic({
       currentRoom: rooms['rLobby'],
       party: startingParty,
       choiceState: 'inAction',
-      choiceTimer: 60,
+      choiceTimer: 600,
       battle: {enemies: [], log: '', initiative: {}},
     }
   },
@@ -658,7 +662,6 @@ Rune.initLogic({
         }
       }
       else if (tpk(game)) {
-        console.log('tpk detected')
         const pW: Record<string, 'LOST'> = {};
         for (const i of Object.keys(game.party)) {
           pW[i] = 'LOST';
@@ -667,7 +670,6 @@ Rune.initLogic({
           players: pW,
           delayPopUp: false,
         })  
-        console.log('tpk resolved')
       }
       else {
         game.choiceTimer = 60;
@@ -690,7 +692,7 @@ Rune.initLogic({
     }
 
     //if (game.choiceTimer > -1) {
-      //game.choiceTimer -= 1;  //TODO: turn back on
+      game.choiceTimer -= 1;  
       if (game.choiceTimer <= 0) {
         if(game.choiceState == 'inAction') {
           //
