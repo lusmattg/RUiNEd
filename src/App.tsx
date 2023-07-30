@@ -11,6 +11,8 @@ import trPHelm from './assets/tr-partyhelm.png'
 import trCSaber from './assets/tr-csaber.png'
 import trBLight from './assets/tr-ballightnings.png'
 import trNone from './assets/tr-none.png'
+import logo from './assets/ruined.png'
+import rLogo from './assets/rune.svg'
 
 import rMightRune from './assets/runeatk.png'
 import rShieldRune from './assets/runephysdef.png'
@@ -22,7 +24,7 @@ function App() {
   const [players, setPlayers] = useState<any>();
   const [yourPlayerId, setYourPlayerId] = useState<string>();
 
-  const battleLogText = useRef();
+  const battleLogText = useRef<HTMLTextAreaElement>(null);
   
   useEffect(() => {
     Rune.initClient({
@@ -32,7 +34,10 @@ function App() {
         setYourPlayerId(yourPlayerId);
       },
     })
-    battleLogText.scrollTop = battleLogText.scrollHeight;
+    if (battleLogText.current) {
+      battleLogText.current.scrollTop = battleLogText.current.scrollHeight;
+    }
+    
   }, [])
 
   if (!game) {
@@ -98,6 +103,8 @@ function App() {
 
     const checkDisp = ((game.currentRoom.choseItem[i] && game.choiceState == 'inAction' ) || (game.currentRoom.pathVotes[i] && game.choiceState == 'inVoteNext') )  ? 'block' : 'none';
     const hpP = game.party[i].curHp / game.party[i].maxHp * 100 + '%';
+    const pInit = Math.min(game.battle.initiative[i],5) / 5 * 100 + '%';
+
     playerList.push(
       <div className={'playerBox'}>
         <div className={'playerName'}>{players[i].displayName}</div>
@@ -111,6 +118,9 @@ function App() {
         </div>
         <div className={'lifebarred'}>
           <div className={'lifebargreen'} style={{width: hpP }}></div>
+        </div>
+        <div className={'initbargray'}>
+          <div className={'initbarblue'} style={{width: pInit }}></div>
         </div>
         {equipDisplay}
       </div>
@@ -131,45 +141,48 @@ function App() {
   </div>
 
   const nextRoomChoices: Array<ReactElement> = [];
-  Object.keys(game.currentRoom.paths).forEach( (nextRoomId) => {
-    const n = parseInt(nextRoomId);
-    const nextRoomName: string = game.currentRoom.paths[n];
-    const nextRoomIntro: string = game.currentRoom.pathIntros[n];
-    if (yourPlayerId != undefined) {
-      nextRoomChoices.push(
-        <button className={'pathButton'} onClick={() => Rune.actions.votePath({pathName: nextRoomName, playerId: yourPlayerId})}>
-          {nextRoomIntro}
-        </button>
-      )
-    }
-  });
-
+  if (yourPlayerId && !game.currentRoom.pathVotes[yourPlayerId]) {
+    Object.keys(game.currentRoom.paths).forEach( (nextRoomId) => {
+      const n = parseInt(nextRoomId);
+      const nextRoomName: string = game.currentRoom.paths[n];
+      const nextRoomIntro: string = game.currentRoom.pathIntros[n];
+      if (yourPlayerId != undefined) {
+        nextRoomChoices.push(
+          <button className={'pathButton'} onClick={() => Rune.actions.votePath({pathName: nextRoomName, playerId: yourPlayerId})}>
+            {nextRoomIntro}
+          </button>
+        )
+      }
+    });
+  }
 
 
   if (game.choiceState == 'inAction') {
     if (game.currentRoom.sType == 'rune') {
       const runeChoices: Array<ReactElement> = [];
-      for (const i of game.currentRoom.sRune) {
-        const mods = [];
-        const rune = runes[i];
-        for (const e of rune) {
-          mods.push(<div>{e.affectedStat} x{e.magnitude}</div>)
-        }
-        runeChoices.push(
-          <div className={'runeCard'} onClick={() => Rune.actions.chooseRune({game: game, rune: i, playerId: yourPlayerId ? yourPlayerId : ''})}>
-            <div>
+      if (yourPlayerId && !game.currentRoom.choseItem[yourPlayerId]) {
+        for (const i of game.currentRoom.sRune) {
+          const mods = [];
+          const rune = runes[i];
+          for (const e of rune) {
+            mods.push(<div>{e.affectedStat} +{e.magnitude}</div>)
+          }
+          runeChoices.push(
+            <div className={'runeCard'} onClick={() => Rune.actions.chooseRune({rune: i, playerId: yourPlayerId ? yourPlayerId : ''})}>
               <div>
-                {i}
+                <div>
+                  {i}
+                </div>
+                <div className={'runeMods'}>
+                  {mods}
+                </div>
               </div>
-              <div className={'runeMods'}>
-                {mods}
+              <div style={{maxHeight: '2em'}}>
+                <img style={{height: '2em', position: 'absolute', right: '1em'}} src={getRuneImage(i)} height='100%'/>
               </div>
             </div>
-            <div style={{maxHeight: '2em'}}>
-              <img style={{height: '2em', position: 'absolute', right: '1em'}} src={getRuneImage(i)} height='100%'/>
-            </div>
-          </div>
-        )
+          )
+        }
       }
 
       if (yourPlayerId && !game.currentRoom.choseItem[yourPlayerId])
@@ -193,17 +206,28 @@ function App() {
     }
     else if (game.currentRoom.sType == 'restoration') {
       //
+      const chose = (yourPlayerId && game.currentRoom.choseItem[yourPlayerId]) ? true : false;
+      let rButtons;
+      if (!chose) { 
+        rButtons = <div>
+          <button className={'fountainButton'} onClick={() => Rune.actions.ackRestoration({playerId: yourPlayerId ? yourPlayerId : '', accepted: true})}>Drink</button>
+          <button className={'fountainButton'} onClick={() => Rune.actions.ackRestoration({playerId: yourPlayerId ? yourPlayerId : '', accepted: false})}>Don't Drink</button>
+        </div>
+      }
       return(
       <div>
           {timer}
           {hpBars}
           {roomDisplay}
-          <button className={'fountainButton'} onClick={() => Rune.actions.ackRestoration({playerId: yourPlayerId ? yourPlayerId : '', accepted: true, game: game})}>Drink</button>
-          <button className={'fountainButton'} onClick={() => Rune.actions.ackRestoration({playerId: yourPlayerId ? yourPlayerId : '', accepted: false, game: game})}>Don't Drink</button>
+          {rButtons}
       </div>);
     }
     else if (game.currentRoom.sType == 'battle') {
       //
+
+      let onCooldown = true;
+      if (yourPlayerId && game.battle.initiative[yourPlayerId] >= 5) onCooldown = false;
+
       const validGlobalMoves: Array<ReactElement> = [];
       if (yourPlayerId) {
         for (const p of game.party[yourPlayerId].powers  ) {
@@ -212,26 +236,21 @@ function App() {
           if (scope == 'self' || scope == 'party' || scope == 'enemyParty' || scope == 'all') { 
             validGlobalMoves.push(
               <button className='battleButton'
+                disabled={onCooldown}
                 onClick={() => Rune.actions.attack({
                   playerId: yourPlayerId,
                   enemyName: 'na',
                   attack: p,
-                  game: game
+                  
                 })}
                 >{p}</button>
             )
           }
         }
       }
+
+
       const allyList: Array<ReactElement> = [];
-      for (const p of Object.keys(game.party)) {
-        const ally = game.party[p];
-        const allyCard = <div>
-          <div>{players[p].displayName}</div>
-          <div>{game.battle.initiative[p]}</div>
-        </div>
-        allyList.push(allyCard);
-      }
 
       const enemyList: Array<ReactElement> = [];
       for (const e of game.battle.enemies) {
@@ -246,11 +265,12 @@ function App() {
               if (scope == 'anyOne' || scope == 'enemy') {
                 validAttacks.push(
                   <button className='battleButton'
+                    disabled={onCooldown}
                     onClick={() => Rune.actions.attack({
                       playerId: yourPlayerId ? yourPlayerId: '',
                       enemyName: e.name,
                       attack: p,
-                      game: game
+                      
                     })}
                     >{p}</button>
                 )
@@ -260,6 +280,7 @@ function App() {
         }
         // enemy card
         const eHpP = e.curHp / e.maxHp * 100 + '%';
+        const eInit = Math.min(game.battle.initiative[e.name],5) / 5 * 100 + '%';
         let styleOverride = {};
         if (e.curHp <= 0) styleOverride = {backgroundColor: 'gray'};
         const enemyCard = <div style={styleOverride} className={'enemyCard'} >
@@ -269,6 +290,12 @@ function App() {
               <div className={'lifebargreen'} style={{width: eHpP }}></div>
             </div>
           </div>
+          <div>
+            <div className={'initbargray'}>
+              <div className={'initbarblue'} style={{width: eInit }}></div>
+            </div>
+          </div>
+
           <div>{validAttacks}</div>
         </div>
         enemyList.push(enemyCard)
@@ -294,7 +321,7 @@ function App() {
           mods.push(<div>{e.affectedStat} x{e.magnitude}</div>)
         }
         treasureChoices.push(
-          <div className={'treasureCard'} onClick={() => Rune.actions.chooseTreasure({game: game, treasureName: i.name, playerId: yourPlayerId ? yourPlayerId : ''})}>
+          <div className={'treasureCard'} onClick={() => Rune.actions.chooseTreasure({treasureName: i.name, playerId: yourPlayerId ? yourPlayerId : ''})}>
             <div>
               <div>
                 {i.name}
@@ -332,11 +359,10 @@ function App() {
       //
 
       const powerChoices: Array<ReactElement> = [];
-      if (yourPlayerId) {
+      if (yourPlayerId && !game.currentRoom.choseItem[yourPlayerId]) {
         for (const i of game.currentRoom.sPowers) {
-          const pow = powers[i];
           powerChoices.push(
-            <div className={'powerCard'} onClick={() => {Rune.actions.choosePower({playerId: yourPlayerId, power: i, game: game})}}>
+            <div className={'powerCard'} onClick={() => {Rune.actions.choosePower({playerId: yourPlayerId, power: i})}}>
               <div>{i}</div>
               <div className={'powerMods'}></div>
             </div>
@@ -349,21 +375,55 @@ function App() {
             {hpBars}
             {roomDisplay}
             {powerChoices}
-            <button onClick={() => Rune.actions.ackPlain({playerId: yourPlayerId? yourPlayerId : '', game: game})}>Ok!</button>
         </div>);
   
     }
     else if (game.currentRoom.sType == 'plain') {
       //
+      const chose = (yourPlayerId && game.currentRoom.choseItem[yourPlayerId]) ? true : false;
+      let rButtons;
+      if (!chose) { 
+        rButtons = <div>
+            <button className={'fountainButton'} onClick={() => Rune.actions.ackPlain({playerId: yourPlayerId? yourPlayerId:'', accepted: true})}>Ok!</button>
+        </div>
+      }
+
       return(
         <div>
             {timer}
             {hpBars}
             {roomDisplay}
-            <button className={'fountainButton'} onClick={() => Rune.actions.ackPlain({playerId: yourPlayerId? yourPlayerId:'', game: game})}>Ok!</button>
+            {rButtons}
         </div>);
   
     }
+
+    else if (game.currentRoom.sType == 'lobby') {
+      //
+      const chose = (yourPlayerId && game.currentRoom.choseItem[yourPlayerId]) ? true : false;
+      let rButtons;
+      if (!chose) { 
+        rButtons = <div>
+            <button className={'fountainButton'} onClick={() => Rune.actions.ackPlain({playerId: yourPlayerId? yourPlayerId:'', accepted: true})}>Ok!</button>
+        </div>
+      }
+
+      return(
+        <div>
+            {timer}
+            {hpBars}
+            {roomDisplay}
+            <div style={{textAlign: 'center'}}>
+              <img src={logo} width={'50%'}></img>
+            </div>
+            {rButtons}
+            <div style={{fontFamily: 'sans-serif', fontSize: 'small', height: '1em'}}>
+              Powered by <img src={rLogo} ></img>
+            </div>
+        </div>);
+  
+    }
+
     else if (game.currentRoom.sType == 'win') {
       //
       return(
